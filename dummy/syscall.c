@@ -12,8 +12,6 @@ void osMutexCreate() {}
 void osMutexDelete() {}
 void osMutexWait() {}
 void osMutexRelease() {}
-void osMessageGet() {}
-void osMessagePut() {}
 void osMailCreate() {}
 void osMailFree() {}
 void osMailAlloc() {}

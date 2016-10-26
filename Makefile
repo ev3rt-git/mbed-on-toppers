@@ -5,6 +5,7 @@
 DIR=.
 DUMMY=$(shell )
 OBJDIR=build
+KERNELDIR=../..
 
 # Tools
 GCC_TARGET = arm-none-eabi
@@ -18,8 +19,15 @@ ALL_OBJS +=
 
 # FIXME: dummy
 CFLAGS += -I${DIR}/dummy
-ALL_CXX_OBJS += dummy/dummy.o
+ALL_CXX_OBJS += dummy/dummy.o dummy/rt_CMSIS.o
 ALL_OBJS += dummy/syscall.o
+CFLAGS += -I${KERNELDIR}/include
+
+# FIXME: hard-coded header files
+CFLAGS += -I${KERNELDIR}/target/ev3_gcc \
+		  -I${KERNELDIR}/arch \
+		  -I${KERNELDIR}/arch/arm_gcc/am1808 \
+		  -I${KERNELDIR}/arch/arm_gcc/common
 
 # mbed-os
 CFLAGS += -I${DIR}/mbed-os \
