@@ -3,21 +3,21 @@
 
 namespace rtos {
 osStatus Thread::wait(unsigned long a) {
-    debug("%s called.", __FUNCTION__);
+    debug("%s called.\n", __FUNCTION__);
 }
 
 Thread::~Thread() {
-    debug("%s called.", __FUNCTION__);
+    debug("%s called.\n", __FUNCTION__);
 }
 
 osStatus Thread::start(mbed::Callback<void()> task) {
-    debug("%s called.", __FUNCTION__);
+    debug("%s called.\n", __FUNCTION__);
 }
 
 void Thread::constructor(osPriority priority=osPriorityNormal,
                      uint32_t stack_size=DEFAULT_STACK_SIZE,
                      unsigned char *stack_pointer=NULL) {
-    debug("%s called.", __FUNCTION__);
+    debug("%s called.\n", __FUNCTION__);
 }
 }
 
@@ -108,4 +108,17 @@ void USBHALHost::_usbisr(void) {
 }
 
 void USBHALHost::UsbIrqhandler() {
+}
+
+#include "USBHost.h"
+extern "C"
+int main() {
+    debug("%s called.\r\n", __FUNCTION__);
+    auto host = USBHost::getHostInst();
+}
+
+// TODO: modify upstream USBHost
+extern "C"
+void wait_ms(int ms) {
+    Thread::wait(ms);
 }

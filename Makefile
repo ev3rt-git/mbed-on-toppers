@@ -34,7 +34,7 @@ ALL_CXX_OBJS += mbed-os/platform/retarget.o \
 				mbed-os/drivers/Stream.o \
 				mbed-os/rtos/Mutex.o \
 				mbed-os/rtos/Semaphore.o
-#ALL_OBJS += mbed-os/platform/mbed_error.o
+ALL_OBJS += mbed-os/platform/mbed_error.o
 
 # USBHost
 USBHOSTDIR = mbed-os/features/unsupported/USBHost

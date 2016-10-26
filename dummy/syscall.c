@@ -1,9 +1,13 @@
 #include "mbed_debug.h"
 
-void _sbrk() {}
-void _exit() {}
-void _kill() {}
-void _getpid() {}
+#define NOT_IMPLEMENTED_SYMBOL(SYM) void SYM() { debug("%s called.\r\n", __FUNCTION__); }
+
+NOT_IMPLEMENTED_SYMBOL(abort)
+NOT_IMPLEMENTED_SYMBOL(_sbrk)
+//NOT_IMPLEMENTED_SYMBOL(_exit)
+NOT_IMPLEMENTED_SYMBOL(_kill)
+NOT_IMPLEMENTED_SYMBOL(_getpid)
+
 void osMutexCreate() {}
 void osMutexDelete() {}
 void osMutexWait() {}
@@ -21,21 +25,16 @@ void osSemaphoreWait() {}
 void osSemaphoreRelease() {}
 
 // Error handling in mbed_error.c etc.
-void error() {
-    debug("%s called.", __FUNCTION__);
-}
-void mbed_assert_internal() {
-    debug("%s called.", __FUNCTION__);
-}
-void mbed_die() {
-    debug("%s called.", __FUNCTION__);
-}
+//NOT_IMPLEMENTED_SYMBOL(error);
+NOT_IMPLEMENTED_SYMBOL(mbed_assert_internal);
+NOT_IMPLEMENTED_SYMBOL(mbed_die);
 
-void main() {
-    debug("%s called.", __FUNCTION__);
+void mbed_error_vfprintf(const char * format, va_list arg) {
+    vfprintf(stderr, format, arg);
 }
 
 void toppers_mbed_start() {
     mbed_sdk_init();
     mbed_main();
+    main();
 }
