@@ -1,6 +1,7 @@
 #include "Thread.h"
 #include "mbed_debug.h"
 
+#if 0
 namespace rtos {
 osStatus Thread::wait(unsigned long a) {
     debug("%s called.\n", __FUNCTION__);
@@ -10,16 +11,14 @@ Thread::~Thread() {
     debug("%s called.\n", __FUNCTION__);
 }
 
+#if 0
 osStatus Thread::start(mbed::Callback<void()> task) {
     debug("%s called.\n", __FUNCTION__);
 }
+#endif
 
-void Thread::constructor(osPriority priority=osPriorityNormal,
-                     uint32_t stack_size=DEFAULT_STACK_SIZE,
-                     unsigned char *stack_pointer=NULL) {
-    debug("%s called.\n", __FUNCTION__);
 }
-}
+#endif
 
 /* mbed USBHost Library
  * Copyright (c) 2006-2013 ARM Limited

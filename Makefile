@@ -19,7 +19,7 @@ ALL_OBJS +=
 
 # FIXME: dummy
 CFLAGS += -I${DIR}/dummy
-ALL_CXX_OBJS += dummy/dummy.o dummy/rt_CMSIS.o
+ALL_CXX_OBJS += dummy/dummy.o dummy/rt_CMSIS.o dummy/Thread.o
 ALL_OBJS += dummy/syscall.o
 CFLAGS += -I${KERNELDIR}/include
 
