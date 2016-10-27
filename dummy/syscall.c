@@ -12,10 +12,6 @@ void osMutexCreate() {}
 void osMutexDelete() {}
 void osMutexWait() {}
 void osMutexRelease() {}
-void osSemaphoreCreate() {}
-void osSemaphoreDelete() {}
-void osSemaphoreWait() {}
-void osSemaphoreRelease() {}
 
 // Error handling in mbed_error.c etc.
 //NOT_IMPLEMENTED_SYMBOL(error);

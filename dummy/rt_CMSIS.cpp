@@ -28,6 +28,9 @@ ER check_svc(const char *file, int_t line, const char *expr, ER ercd) {
 #define acre_mpf(...) CHECK_SVC(acre_mpf(__VA_ARGS__))
 #define tget_mpf(...) CHECK_SVC(tget_mpf(__VA_ARGS__))
 #define rel_mpf(...)  CHECK_SVC(rel_mpf(__VA_ARGS__))
+#define acre_sem(...) CHECK_SVC(acre_sem(__VA_ARGS__))
+#define twai_sem(...) CHECK_SVC(twai_sem(__VA_ARGS__))
+#define del_sem(...)  CHECK_SVC(del_sem(__VA_ARGS__))
 
 #endif
 
@@ -59,7 +62,7 @@ osThreadId osThreadCreate (const osThreadDef_t *thread_def, void *argument) {
     static_assert(sizeof(ctsk.exinf) == sizeof(argument), "thread argument must have same size with exinf in TSK");
     static_assert(std::is_same<decltype(thread_def->pthread(NULL)), decltype(ctsk.task(0))>::value, "thread return value must be void");
     ctsk.tskatr  = TA_ACT; 
-	ctsk.tskatr |= TA_DOM(TDOM_KERNEL); // FIXME: only system tasks are supported
+    ctsk.tskatr |= TA_DOM(TDOM_KERNEL); // FIXME: only system tasks are supported
     ctsk.exinf   = (intptr_t)argument;
     ctsk.task    = (TASK)thread_def->pthread;
     ctsk.itskpri = C2T_PRI(thread_def->tpriority);
@@ -100,6 +103,48 @@ osStatus osDelay (uint32_t millisec) {
     return osOK;
 }
 
+// ==== Semaphore Management ====
+
+/// Create and Initialize a Semaphore object
+osSemaphoreId osSemaphoreCreate (const osSemaphoreDef_t *semaphore_def, int32_t count) {
+    static_assert(osFeature_Semaphore <= TMAX_MAXSEM, "maximum count of semaphore is out of range");
+    assert(count <= osFeature_Semaphore);
+
+    T_CSEM csem;
+    csem.sematr  = TA_NULL;
+    csem.sematr |= TA_DOM(TDOM_KERNEL); // FIXME: belong to kernel domain by default
+    csem.isemcnt = count;               // NOTE: count in mbed seems to be init value other than a max limit
+    csem.maxsem  = osFeature_Semaphore;
+
+    ER_ID ercd = acre_sem(&csem);
+    // FIXME: handle exceptions
+    return (osSemaphoreId)ercd;
+}
+
+/// Wait until a Semaphore becomes available
+int32_t osSemaphoreWait (osSemaphoreId semaphore_id, uint32_t millisec) {
+    assert(millisec < (1UL << (sizeof(TMO) * 8 - 1)) || millisec == osWaitForever); // FIXME: TMO is not unsigned!, TMO in Gen3 kernel is microseconds
+
+    ER ercd = twai_sem(C2T_ID(semaphore_id), C2T_TMO(millisec));
+    // FIXME: only 0 or osFeature_Semaphore will be returned
+    if (ercd == E_TMOUT) return 0;
+    return osFeature_Semaphore;
+}
+
+/// Release a Semaphore
+osStatus osSemaphoreRelease (osSemaphoreId semaphore_id) {
+    ER ercd = sig_sem(C2T_ID(semaphore_id));
+    // FIXME: handle exceptions
+    return osOK;
+}
+
+/// Delete a Semaphore that was created by osSemaphoreCreate
+osStatus osSemaphoreDelete (osSemaphoreId semaphore_id) {
+    ER ercd = del_sem(C2T_ID(semaphore_id));
+    // FIXME: handle exceptions
+    return osOK;
+}
+
 // ==== Message Queue Management Functions ====
 
 osMessageQId osMessageCreate (const osMessageQDef_t *queue_def, osThreadId thread_id) {
@@ -107,6 +152,7 @@ osMessageQId osMessageCreate (const osMessageQDef_t *queue_def, osThreadId threa
 
     T_CDTQ cdtq;
     cdtq.dtqatr = TA_NULL;
+    cdtq.dtqatr|= TA_DOM(TDOM_KERNEL); // FIXME: belong to kernel domain by default
     cdtq.dtqcnt = queue_def->queue_sz;
     cdtq.dtqmb  = queue_def->pool;
     assert(cdtq.dtqmb != NULL);
@@ -167,6 +213,7 @@ osMailQId osMailCreate (const osMailQDef_t *queue_def, osThreadId thread_id) {
 
     T_CMPF cmpf;
     cmpf.mpfatr = TA_NULL;
+    cmpf.mpfatr|= TA_DOM(TDOM_KERNEL); // FIXME: belong to kernel domain by default
     cmpf.blkcnt = queue_def->queue_sz;
     cmpf.blksz  = queue_def->item_sz;
     cmpf.mpf    = (MPF_T*)queue_def->pool;
