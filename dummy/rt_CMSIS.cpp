@@ -3,27 +3,47 @@
 #include <t_syslog.h>
 #include <t_stdlib.h>
 
+#include <cstdlib>
+#include <cstring>
 #include <type_traits>
 
 #define DEBUG_RT_CMSIS
 
 #if defined(DEBUG_RT_CMSIS)
-#define SVC_PERROR(expr) svc_perror(__FILE__, __LINE__, #expr, (expr))
-#else
-#define SVC_PERROR(expr) assert(expr)
+
+#define CHECK_SVC(expr) check_svc(__FILE__, __LINE__, #expr, (expr))
+static inline
+ER check_svc(const char *file, int_t line, const char *expr, ER ercd) {
+    if (ercd < 0) {
+        t_perror(LOG_ERROR, file, line, expr, ercd);
+    }
+}
+#define acre_tsk(...) CHECK_SVC(acre_tsk(__VA_ARGS__))
+#define get_tid(...)  CHECK_SVC(get_tid(__VA_ARGS__))
+#define ter_tsk(...)  CHECK_SVC(ter_tsk(__VA_ARGS__))
+#define dly_tsk(...)  CHECK_SVC(dly_tsk(__VA_ARGS__))
+#define acre_dtq(...) CHECK_SVC(acre_dtq(__VA_ARGS__))
+#define tsnd_dtq(...) CHECK_SVC(tsnd_dtq(__VA_ARGS__))
+#define trcv_dtq(...) CHECK_SVC(trcv_dtq(__VA_ARGS__))
+#define acre_mpf(...) CHECK_SVC(acre_mpf(__VA_ARGS__))
+#define tget_mpf(...) CHECK_SVC(tget_mpf(__VA_ARGS__))
+#define rel_mpf(...)  CHECK_SVC(rel_mpf(__VA_ARGS__))
+
 #endif
 
 // Cast a CMSIS type to TOPPERS type
 #define C2T_ID(id) ((ID)(id)) 
-//#define C2T_PRI(pri) (TMIN_TPRI-(pri)+3) // TODO: how to decide this mapping?
-#define C2T_PRI(pri) (TMIN_TPRI-(pri)+6) // TODO: how to decide this mapping?
+#define C2T_PRI(pri) (TMIN_TPRI-(pri)+3) // TODO: how to decide this mapping?
+//#define C2T_PRI(pri) (TMIN_TPRI-(pri)+6) // TODO: how to decide this mapping?
 
 #if TKERNEL_PRVER == UINT_C(0x2021)
-#define dly_tsk_ms  dly_tsk
-#define tsnd_dtq_ms tsnd_dtq
-#define trcv_dtq_ms trcv_dtq
+#define C2T_TMO(ms) (((ms) == osWaitForever) ? TMO_FEVR : (ms)) // millisec -> TMO
+#define C2T_RELTIM(ms) ((RELTIM)(ms)) // millisec -> RELTIM
 #else
 #error "Only HRP2 kernel is supported."
+#define C2T_TMO(ms) (((ms) == osWaitForever) ? TMO_FEVR : (ms * 1000UL)) // millisec -> TMO (in us)
+#define C2T_RELTIM(ms) ((RELTIM)((ms) * 1000UL)) // millisec -> RELTIM
+// handle TMO_FEVR
 #endif
 
 extern "C" {
@@ -50,7 +70,6 @@ osThreadId osThreadCreate (const osThreadDef_t *thread_def, void *argument) {
 
     ER_ID ercd = acre_tsk(&ctsk);
     if (ercd <= 0) {
-        SVC_PERROR(ercd);
         return NULL;
     }
     return (osThreadId)ercd;
@@ -63,11 +82,9 @@ osStatus osThreadTerminate (osThreadId thread_id) {
     ID cur_tid;
     ercd = get_tid(&cur_tid);
     if (ercd == E_CTX) return osErrorISR;
-    SVC_PERROR(ercd);
     if (cur_tid == C2T_ID(thread_id)) ext_tsk();
 
     ercd = ter_tsk(C2T_ID(thread_id));
-    SVC_PERROR(ercd);
     return osOK;
 }
 
@@ -78,9 +95,8 @@ osStatus osDelay (uint32_t millisec) {
     static_assert(sizeof(millisec) <= sizeof(RELTIM), "millisec must be in range of RELTIM");
     assert(millisec >= 1);
 
-    ER ercd = dly_tsk_ms(millisec);
+    ER ercd = dly_tsk(C2T_RELTIM(millisec));
     if (ercd == E_CTX) return osErrorISR; // Not allowed in ISR
-    SVC_PERROR(ercd);
     return osOK;
 }
 
@@ -97,7 +113,6 @@ osMessageQId osMessageCreate (const osMessageQDef_t *queue_def, osThreadId threa
 
     ER_ID ercd = acre_dtq(&cdtq);
     if (ercd <= 0) {
-        SVC_PERROR(ercd);
         return NULL;
     }
     return (osMessageQId)ercd;
@@ -107,11 +122,9 @@ osStatus osMessagePut (osMessageQId queue_id, uint32_t info, uint32_t millisec) 
     static_assert(sizeof(info) == sizeof(intptr_t), "message must have same size with data in DTQ");
     assert(millisec < (1UL << (sizeof(TMO) * 8 - 1)) || millisec == osWaitForever); // FIXME: TMO is not unsigned!, TMO in Gen3 kernel is microseconds
 
-    TMO tmout = (millisec == osWaitForever) ? TMO_FEVR : millisec;
-    ER  ercd  = tsnd_dtq_ms(C2T_ID(queue_id), info, tmout); // FIXME: interrupt context is not supported yet
+    ER ercd = tsnd_dtq(C2T_ID(queue_id), info, C2T_TMO(millisec)); // FIXME: interrupt context is not supported yet
 
     if (ercd == E_TMOUT) return osErrorTimeoutResource;
-    SVC_PERROR(ercd);
     return osOK;
 }
 
@@ -120,17 +133,100 @@ os_InRegs osEvent osMessageGet (osMessageQId queue_id, uint32_t millisec) {
     static_assert(sizeof(ret.value.v) == sizeof(intptr_t), "message must have same size with data in DTQ");
     assert(millisec < (1UL << (sizeof(TMO) * 8 - 1)) || millisec == osWaitForever); // FIXME: TMO is not unsigned!, TMO in Gen3 kernel is microseconds
 
-    TMO tmout = (millisec == osWaitForever) ? TMO_FEVR : millisec;
-    ER  ercd  = trcv_dtq_ms(C2T_ID(queue_id), (intptr_t*)(&(ret.value.v)), tmout); // FIXME: interrupt context is not supported yet
+    ER ercd = trcv_dtq(C2T_ID(queue_id), (intptr_t*)(&(ret.value.v)), C2T_TMO(millisec)); // FIXME: interrupt context is not supported yet
 
     if (ercd == E_TMOUT) {
         ret.status = millisec ? osEventTimeout : osOK;
     } else {
-        SVC_PERROR(ercd);
         ret.status = osEventMessage;
     }
 
     return ret;
+}
+
+// ==== Mail Queue Management Functions ====
+
+struct os_mailQ_cb {
+    osMessageQId qid; // message queue id
+    ID           mpf; // fixed-size memory pool
+    uint32_t     bsz; // mail block size
+};
+
+/// Create and Initialize mail queue
+osMailQId osMailCreate (const osMailQDef_t *queue_def, osThreadId thread_id) {
+    assert(thread_id == NULL);
+
+    osMessageQDef_t msg_queue_def;
+    msg_queue_def.queue_sz = queue_def->queue_sz;
+    msg_queue_def.pool     = NULL;
+    
+    auto msg_queue_id = osMessageCreate(&msg_queue_def, thread_id);
+    if (msg_queue_id == NULL) {
+        return NULL;
+    }
+
+    T_CMPF cmpf;
+    cmpf.mpfatr = TA_NULL;
+    cmpf.blkcnt = queue_def->queue_sz;
+    cmpf.blksz  = queue_def->item_sz;
+    cmpf.mpf    = (MPF_T*)queue_def->pool;
+    cmpf.mpfmb  = NULL; // TODO: should we pass NULL to kernel?
+
+    ER_ID mpfid = acre_mpf(&cmpf);
+    if (mpfid <= 0) {
+        return NULL;
+    }
+
+    auto queue_id = (osMailQId)malloc(sizeof(struct os_mailQ_cb));
+    assert(queue_id != NULL);
+    queue_id->qid = msg_queue_id;
+    queue_id->mpf = mpfid;
+    queue_id->bsz = queue_def->item_sz;
+
+    return queue_id;
+}
+
+/// Allocate a memory block from a mail
+void *osMailAlloc (osMailQId queue_id, uint32_t millisec) {
+    assert(millisec < (1UL << (sizeof(TMO) * 8 - 1)) || millisec == osWaitForever); // FIXME: TMO is not unsigned!, TMO in Gen3 kernel is microseconds
+
+    void *blk = NULL;
+
+    ER ercd = tget_mpf(queue_id->mpf, &blk, C2T_TMO(millisec)); // FIXME: interrupt context is not supported yet
+    // FIXME: handle exceptions
+
+    return blk;
+}
+
+/// Allocate a memory block from a mail and set memory block to zero
+void *osMailCAlloc (osMailQId queue_id, uint32_t millisec) {
+    void *blk = osMailAlloc(queue_id, millisec);
+    if (blk != NULL) memset(blk, 0, queue_id->bsz);
+    return blk;
+}
+
+/// Free a memory block from a mail
+osStatus osMailFree (osMailQId queue_id, void *mail) {
+    ER ercd = rel_mpf(queue_id->mpf, mail); // FIXME: interrupt context is not supported yet
+    // FIXME: handle exceptions
+    return osOK;
+}
+
+/// Get a mail from a queue
+os_InRegs osEvent osMailGet (osMailQId queue_id, uint32_t millisec) {
+    //FIXME: check parameters
+    osEvent ret;
+    
+    ret = osMessageGet(queue_id->qid, millisec);
+    if (ret.status == osEventMessage) ret.status = osEventMail;
+    
+    return ret;
+}
+
+/// Put a mail to a queue
+osStatus osMailPut (osMailQId queue_id, void *mail) {
+    //FIXME: check parameters
+    return osMessagePut(queue_id->qid, (uint32_t)mail, 0); // TODO: what about 64bit arch?
 }
 
 }

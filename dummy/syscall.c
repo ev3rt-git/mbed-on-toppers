@@ -12,11 +12,6 @@ void osMutexCreate() {}
 void osMutexDelete() {}
 void osMutexWait() {}
 void osMutexRelease() {}
-void osMailCreate() {}
-void osMailFree() {}
-void osMailAlloc() {}
-void osMailGet() {}
-void osMailPut() {}
 void osSemaphoreCreate() {}
 void osSemaphoreDelete() {}
 void osSemaphoreWait() {}
