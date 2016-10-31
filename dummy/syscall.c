@@ -8,11 +8,6 @@ NOT_IMPLEMENTED_SYMBOL(_sbrk)
 NOT_IMPLEMENTED_SYMBOL(_kill)
 NOT_IMPLEMENTED_SYMBOL(_getpid)
 
-void osMutexCreate() {}
-void osMutexDelete() {}
-void osMutexWait() {}
-void osMutexRelease() {}
-
 // Error handling in mbed_error.c etc.
 //NOT_IMPLEMENTED_SYMBOL(error);
 NOT_IMPLEMENTED_SYMBOL(mbed_assert_internal);

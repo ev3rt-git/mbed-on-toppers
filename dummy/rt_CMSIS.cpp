@@ -30,7 +30,12 @@ ER check_svc(const char *file, int_t line, const char *expr, ER ercd) {
 #define rel_mpf(...)  CHECK_SVC(rel_mpf(__VA_ARGS__))
 #define acre_sem(...) CHECK_SVC(acre_sem(__VA_ARGS__))
 #define twai_sem(...) CHECK_SVC(twai_sem(__VA_ARGS__))
+#define sig_sem(...)  CHECK_SVC(sig_sem(__VA_ARGS__))
 #define del_sem(...)  CHECK_SVC(del_sem(__VA_ARGS__))
+#define acre_mtx(...) CHECK_SVC(acre_mtx(__VA_ARGS__))
+#define tloc_mtx(...) CHECK_SVC(tloc_mtx(__VA_ARGS__))
+#define unl_mtx(...)  CHECK_SVC(unl_mtx(__VA_ARGS__))
+#define del_mtx(...)  CHECK_SVC(del_mtx(__VA_ARGS__))
 
 #endif
 
@@ -45,7 +50,7 @@ ER check_svc(const char *file, int_t line, const char *expr, ER ercd) {
 #else
 #error "Only HRP2 kernel is supported."
 #define C2T_TMO(ms) (((ms) == osWaitForever) ? TMO_FEVR : (ms * 1000UL)) // millisec -> TMO (in us)
-#define C2T_RELTIM(ms) ((RELTIM)((ms) * 1000UL)) // millisec -> RELTIM
+#define C2T_RELTIM(ms) ((RELTIM)((ms) * 1000UL)) // millisec -> RELTIM (in us)
 // handle TMO_FEVR
 #endif
 
@@ -100,6 +105,43 @@ osStatus osDelay (uint32_t millisec) {
 
     ER ercd = dly_tsk(C2T_RELTIM(millisec));
     if (ercd == E_CTX) return osErrorISR; // Not allowed in ISR
+    return osOK;
+}
+
+// ==== Mutex Management ====
+
+/// Create and Initialize a Mutex object
+osMutexId osMutexCreate (const osMutexDef_t *mutex_def) {
+    T_CMTX cmtx;
+    cmtx.mtxatr  = TA_NULL;
+    cmtx.mtxatr |= TA_DOM(TDOM_KERNEL); // FIXME: belong to kernel domain by default
+
+    ER_ID ercd = acre_mtx(&cmtx);
+    // FIXME: handle exceptions
+    return (osMutexId)ercd;
+}
+
+/// Wait until a Mutex becomes available
+osStatus osMutexWait (osMutexId mutex_id, uint32_t millisec) {
+    assert(millisec < (1UL << (sizeof(TMO) * 8 - 1)) || millisec == osWaitForever); // FIXME: TMO is not unsigned!, TMO in Gen3 kernel is microseconds
+
+    ER ercd = tloc_mtx(C2T_ID(mutex_id), C2T_TMO(millisec));
+    // FIXME: handle exceptions
+    if (ercd == E_TMOUT) return osErrorTimeoutResource;
+    return osOK;
+}
+
+/// Release a Mutex that was obtained with osMutexWait
+osStatus osMutexRelease (osMutexId mutex_id) {
+    ER ercd = unl_mtx(C2T_ID(mutex_id));
+    // FIXME: handle exceptions
+    return osOK;
+}
+
+/// Delete a Mutex that was created by osMutexCreate
+osStatus osMutexDelete (osMutexId mutex_id) {
+    ER ercd = del_mtx(C2T_ID(mutex_id));
+    // FIXME: handle exceptions
     return osOK;
 }
 
