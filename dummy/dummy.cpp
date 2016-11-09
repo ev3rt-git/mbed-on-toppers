@@ -91,10 +91,21 @@ void USBHALHost::UsbIrqhandler() {
 }
 
 #include "USBHost.h"
+#include "EthernetInterface.h"
+#include "DhcpServer.h"
+void *__dso_handle=0;
 extern "C"
 int main() {
+#if 1
     debug("%s called.\r\n", __FUNCTION__);
     auto host = USBHost::getHostInst();
+    debug("connect eth.\r\n");
+    auto eth = new EthernetInterface();
+    eth->set_network("10.0.10.1", "255.255.255.0", "10.0.10.1");
+    eth->connect();
+    debug("start dhcp\r\n");
+    auto dhcp_server = new DhcpServer("HostName", "10.0.10.1"/*eth->get_ip_address()*/);
+#endif
 }
 
 // TODO: modify upstream USBHost

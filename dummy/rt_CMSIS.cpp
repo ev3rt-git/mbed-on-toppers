@@ -17,6 +17,7 @@ ER check_svc(const char *file, int_t line, const char *expr, ER ercd) {
     if (ercd < 0) {
         t_perror(LOG_ERROR, file, line, expr, ercd);
     }
+    return ercd;
 }
 #define acre_tsk(...) CHECK_SVC(acre_tsk(__VA_ARGS__))
 #define get_tid(...)  CHECK_SVC(get_tid(__VA_ARGS__))
@@ -24,7 +25,7 @@ ER check_svc(const char *file, int_t line, const char *expr, ER ercd) {
 #define dly_tsk(...)  CHECK_SVC(dly_tsk(__VA_ARGS__))
 #define acre_dtq(...) CHECK_SVC(acre_dtq(__VA_ARGS__))
 #define tsnd_dtq(...) CHECK_SVC(tsnd_dtq(__VA_ARGS__))
-#define trcv_dtq(...) CHECK_SVC(trcv_dtq(__VA_ARGS__))
+//#define trcv_dtq(...) CHECK_SVC(trcv_dtq(__VA_ARGS__))
 #define acre_mpf(...) CHECK_SVC(acre_mpf(__VA_ARGS__))
 #define tget_mpf(...) CHECK_SVC(tget_mpf(__VA_ARGS__))
 #define rel_mpf(...)  CHECK_SVC(rel_mpf(__VA_ARGS__))
@@ -201,6 +202,8 @@ osMessageQId osMessageCreate (const osMessageQDef_t *queue_def, osThreadId threa
 
     ER_ID ercd = acre_dtq(&cdtq);
     if (ercd <= 0) {
+        syslog(LOG_ERROR, "%s() called, cnt:%d, mb:0x%p", __FUNCTION__, cdtq.dtqcnt, cdtq.dtqmb);
+        while(1)tslp_tsk(10);
         return NULL;
     }
     return (osMessageQId)ercd;

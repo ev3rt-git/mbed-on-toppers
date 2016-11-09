@@ -16,6 +16,24 @@ void Thread::constructor(osPriority priority,
     _thread_def.instances = 1;
 }
 
+void Thread::constructor(Callback<void()> task,
+        osPriority priority, uint32_t stack_size, unsigned char *stack_pointer) {
+    constructor(priority, stack_size, stack_pointer);
+
+    switch (start(task)) {
+        case osErrorResource:
+            error("OS ran out of threads!\n");
+            break;
+        case osErrorParameter:
+            error("Thread already running!\n");
+            break;
+        case osErrorNoMemory:
+            error("Error allocating the stack memory\n");
+        default:
+            break;
+    }
+}
+
 osStatus Thread::start(Callback<void()> task) {
     _mutex.lock();
 
