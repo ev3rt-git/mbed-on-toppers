@@ -93,6 +93,7 @@ void USBHALHost::UsbIrqhandler() {
 #include "USBHost.h"
 #include "EthernetInterface.h"
 #include "DhcpServer.h"
+#include "lwip/apps/httpd.h"
 void *__dso_handle=0;
 extern "C"
 int main() {
@@ -105,6 +106,7 @@ int main() {
     eth->connect();
     debug("start dhcp\r\n");
     auto dhcp_server = new DhcpServer("HostName", "10.0.10.1"/*eth->get_ip_address()*/);
+    httpd_init();
 #endif
 }
 

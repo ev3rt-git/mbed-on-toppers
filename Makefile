@@ -73,8 +73,11 @@ ALL_OBJS += ${LWIPIFDIR}/lwip_stack.o \
 			${LWIPIFDIR}/lwip-sys/arch/lwip_sys_arch.o \
 			${LWIPDIR}/api/lwip_api_lib.o \
 			${LWIPDIR}/api/lwip_api_msg.o \
+			${LWIPDIR}/api/lwip_err.o \
 			${LWIPDIR}/api/lwip_netbuf.o \
 			${LWIPDIR}/api/lwip_tcpip.o \
+			${LWIPDIR}/apps/httpd/lwip_httpd.o \
+			${LWIPDIR}/apps/httpd/lwip_fs.o \
 			${LWIPDIR}/core/ipv4/lwip_dhcp.o \
 			${LWIPDIR}/core/ipv4/lwip_etharp.o \
 			${LWIPDIR}/core/ipv4/lwip_icmp.o \

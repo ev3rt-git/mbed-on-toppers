@@ -24,6 +24,12 @@
 #define MEM_SIZE                      (1600 * 16)
 #define TCPIP_THREAD_STACKSIZE (4096)
 
+/**
+ * FIXME: It seems memp implementation is buggy
+ * when using httpd so we define this flag. -- ertl-liyixiao
+ */
+#define MEMP_MEM_MALLOC 1
+
 // TODO: this should be generated from 'mbed-lib.json'
 #define MBED_CONF_LWIP_IPV4_ENABLED 1
 #define MBED_CONF_LWIP_IPV6_ENABLED 0
@@ -31,5 +37,6 @@
 #define MBED_CONF_LWIP_ADDR_TIMEOUT 5
 
 #define LWIP_DEBUG
+#define HTTPD_DEBUG LWIP_DBG_ON
 
 #endif
