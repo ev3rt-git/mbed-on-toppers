@@ -30,7 +30,8 @@ CFLAGS += -I${KERNELDIR}/target/ev3_gcc \
 		  -I${KERNELDIR}/arch/arm_gcc/common \
 		  -I${KERNELDIR}/modules/btstack/platforms/ev3rt \
 		  -I${DIR}/arch/ev3rt
-ALL_OBJS += ${DIR}/arch/ev3rt/btstack_emac.o
+ALL_OBJS += ${DIR}/arch/ev3rt/btstack_emac.o \
+			${DIR}/arch/ev3rt/lwip_httpd_handler.o
 
 # mbed-os
 CFLAGS += -I${DIR}/mbed-os \

@@ -30,6 +30,8 @@
  */
 #define MEMP_MEM_MALLOC 1
 
+#define LWIP_HTTPD_SUPPORT_POST 1
+
 // TODO: this should be generated from 'mbed-lib.json'
 #define MBED_CONF_LWIP_IPV4_ENABLED 1
 #define MBED_CONF_LWIP_IPV6_ENABLED 0
@@ -37,6 +39,6 @@
 #define MBED_CONF_LWIP_ADDR_TIMEOUT 5
 
 #define LWIP_DEBUG
-#define HTTPD_DEBUG LWIP_DBG_ON
+//#define HTTPD_DEBUG LWIP_DBG_ON
 
 #endif
