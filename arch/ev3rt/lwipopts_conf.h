@@ -23,6 +23,8 @@
 
 #define MEM_SIZE                      (1600 * 16)
 #define TCPIP_THREAD_STACKSIZE (4096)
+#define TCP_MSS (1460)
+#define TCP_WND (8192)
 
 /**
  * FIXME: It seems memp implementation is buggy
