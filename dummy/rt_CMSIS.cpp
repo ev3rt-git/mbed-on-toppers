@@ -42,7 +42,8 @@ ER check_svc(const char *file, int_t line, const char *expr, ER ercd) {
 
 // Cast a CMSIS type to TOPPERS type
 #define C2T_ID(id) ((ID)(id)) 
-#define C2T_PRI(pri) (TMIN_TPRI-(pri)+3) // TODO: how to decide this mapping?
+#define C2T_PRI(pri) (TMAX_TPRI-(pri)) // TODO: how to decide this mapping?
+//#define C2T_PRI(pri) (TMIN_TPRI-(pri)+3) // TODO: how to decide this mapping?
 //#define C2T_PRI(pri) (TMIN_TPRI-(pri)+6) // TODO: how to decide this mapping?
 
 #if TKERNEL_PRVER == UINT_C(0x2021)
@@ -61,7 +62,7 @@ extern "C" {
 
 /// Create a thread and add it to Active Threads and set it to state READY
 osThreadId osThreadCreate (const osThreadDef_t *thread_def, void *argument) {
-    assert(thread_def->instances == 1);
+    assert(thread_def->instances <= 1); // TODO: is thread_def->instances == 0 OK?
     assert(thread_def->tpriority >= osPriorityIdle && thread_def->tpriority <= osPriorityRealtime);
 
     T_CTSK ctsk;

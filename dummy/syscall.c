@@ -17,8 +17,8 @@ void mbed_error_vfprintf(const char * format, va_list arg) {
     vfprintf(stderr, format, arg);
 }
 
-void toppers_mbed_start() {
+void toppers_mbed_initialize() {
     mbed_sdk_init();
     mbed_main();
-    main();
+    //main();
 }

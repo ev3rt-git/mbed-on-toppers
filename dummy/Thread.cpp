@@ -112,4 +112,11 @@ void Thread::_thunk(const void * thread_ptr)
     // rtos will release the mutex automatically
 }
 
+// TODO: modify upstream USBHost
+extern "C"
+void wait_ms(int ms) {
+    Thread::wait(ms);
 }
+
+}
+

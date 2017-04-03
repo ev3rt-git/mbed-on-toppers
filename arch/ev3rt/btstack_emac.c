@@ -19,6 +19,9 @@ void bnep_channel_receive_callback(uint8_t *packet, uint16_t size) {
         return;
     }
 
+//    SYSUTM utm1, utm2;
+//    get_utm(&utm1);
+
     struct pbuf *p = pbuf_alloc(PBUF_RAW, size, PBUF_RAM);
     memcpy(p->payload, packet, size);
     p->len = size;
@@ -28,6 +31,8 @@ void bnep_channel_receive_callback(uint8_t *packet, uint16_t size) {
         pbuf_free(p);
         assert(false); // FIXME: handle this
     }
+//    get_utm(&utm2);
+//    syslog(LOG_ERROR, "%s costs %d us", __FUNCTION__, utm2 - utm1);
 }
 
 static err_t btstack_linkoutput(struct netif *netif, struct pbuf *p) {

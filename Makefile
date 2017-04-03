@@ -19,7 +19,8 @@ ALL_OBJS +=
 
 # FIXME: dummy
 CFLAGS += -I${DIR}/dummy
-ALL_CXX_OBJS += dummy/dummy.o dummy/rt_CMSIS.o dummy/Thread.o
+#ALL_CXX_OBJS += dummy/dummy.o dummy/rt_CMSIS.o dummy/Thread.o
+ALL_CXX_OBJS += dummy/rt_CMSIS.o dummy/Thread.o
 ALL_OBJS += dummy/syscall.o dummy/us_ticker.o
 CFLAGS += -I${KERNELDIR}/include
 
@@ -32,6 +33,7 @@ CFLAGS += -I${KERNELDIR}/target/ev3_gcc \
 		  -I${DIR}/arch/ev3rt
 ALL_OBJS += ${DIR}/arch/ev3rt/btstack_emac.o \
 			${DIR}/arch/ev3rt/lwip_httpd_handler.o
+ALL_CXX_OBJS += ${DIR}/arch/ev3rt/mbed-interface.o
 
 # mbed-os
 CFLAGS += -I${DIR}/mbed-os \
@@ -51,82 +53,22 @@ ALL_CXX_OBJS += mbed-os/platform/retarget.o \
 ALL_OBJS += mbed-os/platform/mbed_error.o \
 			mbed-os/platform/mbed_interface.o
 
-# USBHost
-USBHOSTDIR = mbed-os/features/unsupported/USBHost
-CFLAGS += -I${USBHOSTDIR}/USBHost \
-		  -I${USBHOSTDIR}/USBHostHub
-ALL_CXX_OBJS += ${USBHOSTDIR}/USBHostSerial/USBHostSerial.o \
-				${USBHOSTDIR}/USBHost/USBHost.o \
-				${USBHOSTDIR}/USBHost/USBEndpoint.o \
-				${USBHOSTDIR}/USBHost/USBDeviceConnected.o \
-				${USBHOSTDIR}/USBHostHub/USBHostHub.o 
-
-# EthernetInterface over lwIP (FEATURE_LWIP)
-LWIPIFDIR = mbed-os/features/FEATURE_LWIP/lwip-interface
-NETSOCKDIR = mbed-os/features/netsocket
-LWIPDIR = ${LWIPIFDIR}/lwip/src
-CFLAGS += -I${LWIPIFDIR} \
-		  -I${LWIPIFDIR}/lwip-sys \
-		  -I${LWIPDIR}/include \
-		  -Imbed-os/features \
-		  -I${NETSOCKDIR}
-ALL_OBJS += ${LWIPIFDIR}/lwip_stack.o \
-			${LWIPIFDIR}/lwip-sys/arch/lwip_sys_arch.o \
-			${LWIPDIR}/api/lwip_api_lib.o \
-			${LWIPDIR}/api/lwip_api_msg.o \
-			${LWIPDIR}/api/lwip_err.o \
-			${LWIPDIR}/api/lwip_netbuf.o \
-			${LWIPDIR}/api/lwip_tcpip.o \
-			${LWIPDIR}/apps/httpd/lwip_httpd.o \
-			${LWIPDIR}/apps/httpd/lwip_fs.o \
-			${LWIPDIR}/core/ipv4/lwip_dhcp.o \
-			${LWIPDIR}/core/ipv4/lwip_etharp.o \
-			${LWIPDIR}/core/ipv4/lwip_icmp.o \
-			${LWIPDIR}/core/ipv4/lwip_igmp.o \
-			${LWIPDIR}/core/ipv4/lwip_ip4.o \
-			${LWIPDIR}/core/ipv4/lwip_ip4_addr.o \
-			${LWIPDIR}/core/ipv4/lwip_ip4_frag.o \
-			${LWIPDIR}/core/lwip_dns.o \
-			${LWIPDIR}/core/lwip_inet_chksum.o \
-			${LWIPDIR}/core/lwip_init.o \
-			${LWIPDIR}/core/lwip_ip.o \
-			${LWIPDIR}/core/lwip_mem.o \
-			${LWIPDIR}/core/lwip_memp.o \
-			${LWIPDIR}/core/lwip_netif.o \
-			${LWIPDIR}/core/lwip_pbuf.o \
-			${LWIPDIR}/core/lwip_stats.o \
-			${LWIPDIR}/core/lwip_tcp.o \
-			${LWIPDIR}/core/lwip_tcp_in.o \
-			${LWIPDIR}/core/lwip_tcp_out.o \
-			${LWIPDIR}/core/lwip_timeouts.o \
-			${LWIPDIR}/core/lwip_udp.o \
-			${LWIPDIR}/netif/lwip_ethernet.o
-ALL_CXX_OBJS += ${LWIPIFDIR}/EthernetInterface.o \
-				${NETSOCKDIR}/NetworkInterface.o \
-				${NETSOCKDIR}/nsapi_dns.o \
-				${NETSOCKDIR}/NetworkStack.o \
-				${NETSOCKDIR}/Socket.o \
-				${NETSOCKDIR}/SocketAddress.o \
-				${NETSOCKDIR}/UDPSocket.o
-
-# DhcpServer
-CFLAGS += -Irepos/DhcpServer
-ALL_CXX_OBJS += repos/DhcpServer/DhcpServer.o
+#include Makefile.USBHost
+include Makefile.lwIP
 
 #
 # Include header and source files
 #
 vpath %.c $(SRCDIRS)
 
-#BLE_FILES  =  ad_parser.c att.c att_server.c att_dispatch.c att_db_util.c le_device_db_memory.c gatt_client.c
-#BLE_FILES  += sm.c l2cap_le.c ancs_client_lib.h ancs_client_lib.c
-
 all: prepare-obj-folder $(LIBRARY_FILE)
 
 clean:
+	cd ${OBJDIR}; \
 	rm -f ${ALL_OBJS} dummy.o
 
 realclean: clean
+	cd ${OBJDIR}; \
 	rm -f ${LIBRARY_FILE}
 
 dummy: dummy.o $(ALL_OBJS)
