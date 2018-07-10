@@ -28,7 +28,6 @@
 
 static char receivebuff[500];
 static char sendbuff[300] = {0};
-//static UDPSocket dhcp_server; // FIXME: global cons is not supported!
 static Thread * dhcpThread = NULL;
 static char chaddr_tbl[CONNECT_NUM][6] = {0};
 static const char mac_no_use[6] = {0, 0, 0, 0, 0, 0};
@@ -58,9 +57,12 @@ public:
     virtual ~LwipUDPSocket() {}
 };
 
+static LwipUDPSocket *p_dhcp_server;
+static const SocketAddress *p_client;
+
 static void dhcp_task_static(void const *argument) {
-    static LwipUDPSocket dhcp_server;
-    static const SocketAddress client("255.255.255.255", 68);
+    LwipUDPSocket &dhcp_server = *p_dhcp_server;
+    const SocketAddress &client = *p_client;
 
     int cnt;
     int tbl_index;
@@ -218,6 +220,9 @@ DhcpServer::DhcpServer(char * name, char * ipadder) {
     sendbuff[ofs++] = 0xff;
 
     if (dhcpThread == NULL) {
+        /* C++ global constructors are not supported, so initialize them here. */
+        p_dhcp_server = new LwipUDPSocket();
+        p_client = new SocketAddress("255.255.255.255", 68);
         dhcpThread = new Thread(&dhcp_task_static, NULL, osPriorityNormal, (1024 * 8));
     }
 }

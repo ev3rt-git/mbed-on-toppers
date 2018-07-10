@@ -29,7 +29,7 @@ void bnep_channel_receive_callback(uint8_t *packet, uint16_t size) {
     if (netif->input(p, netif) != ERR_OK) {
         /* Free buffer */
         pbuf_free(p);
-        assert(false); // FIXME: handle this
+        //assert(false); // FIXME: handle this
     }
 //    get_utm(&utm2);
 //    syslog(LOG_ERROR, "%s costs %d us", __FUNCTION__, utm2 - utm1);
