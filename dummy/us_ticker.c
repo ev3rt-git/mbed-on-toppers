@@ -6,11 +6,12 @@ uint32_t us_ticker_read() {
     SYSTIM systim;
     ER ercd = get_tim(&systim);
     assert(ercd == E_OK);
-#if TKERNEL_PRVER == UINT_C(0x2021)
+#if defined(BUILD_HRP2_LIBRARY)
     return systim * 1000UL;
-#else
-#error "Only HRP2 kernel is supported."
+#elif defined(BUILD_HRP3_LIBRARY)
     return systim;
+#else
+#error unsupported kernel version
 #endif
 
 }

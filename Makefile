@@ -6,14 +6,22 @@ DIR=.
 DUMMY=$(shell )
 OBJDIR=build
 KERNELDIR=../..
+HRP2_LIBRARY_FILE=libmbed-hrp2.a
+HRP3_LIBRARY_FILE=libmbed-hrp3.a
+
+ifneq ("$(wildcard $(KERNELDIR)/kernel/kernel.tf)","")
+    LIBRARY_FILE=$(HRP2_LIBRARY_FILE)
+    CFLAGS += -DBUILD_HRP2_LIBRARY
+else
+    LIBRARY_FILE=$(HRP3_LIBRARY_FILE)
+    CFLAGS += -DBUILD_HRP3_LIBRARY
+endif
 
 # Tools
 GCC_TARGET = arm-none-eabi
 AR = $(GCC_TARGET)-ar
 CC = $(GCC_TARGET)-gcc -O2 -nostdlib -std=gnu99 -fno-strict-aliasing -mcpu=arm926ej-s -mlittle-endian
 CXX = $(GCC_TARGET)-g++ -O2 -nostdlib -std=gnu++11 -fno-strict-aliasing -mcpu=arm926ej-s -mlittle-endian -fpermissive
-
-LIBRARY_FILE=libmbed.a
 
 ALL_OBJS +=
 
@@ -22,14 +30,16 @@ CFLAGS += -I${DIR}/dummy
 #ALL_CXX_OBJS += dummy/dummy.o dummy/rt_CMSIS.o dummy/Thread.o
 ALL_CXX_OBJS += dummy/rt_CMSIS.o dummy/Thread.o
 ALL_OBJS += dummy/syscall.o dummy/us_ticker.o
-CFLAGS += -I${KERNELDIR}/include
+CFLAGS += -DTOPPERS_OMIT_TECS -I${KERNELDIR}/include
 
 # FIXME: hard-coded files for EV3RT
 CFLAGS += -I${KERNELDIR}/target/ev3_gcc \
 		  -I${KERNELDIR}/arch \
+		  -I${KERNELDIR}/arch/gcc \
 		  -I${KERNELDIR}/arch/arm_gcc/am1808 \
 		  -I${KERNELDIR}/arch/arm_gcc/common \
 		  -I${KERNELDIR}/modules/btstack/platforms/ev3rt \
+		  -I${KERNELDIR} \
 		  -I${DIR}/arch/ev3rt
 ALL_OBJS += ${DIR}/arch/ev3rt/btstack_emac.o \
 			${DIR}/arch/ev3rt/lwip_httpd_handler.o
@@ -69,7 +79,7 @@ clean:
 
 realclean: clean
 	cd ${OBJDIR}; \
-	rm -f ${LIBRARY_FILE}
+	rm -f $(HRP2_LIBRARY_FILE) $(HRP3_LIBRARY_FILE)
 
 dummy: dummy.o $(ALL_OBJS)
 	$(CC) -o dummy dummy.o $(ALL_OBJS)

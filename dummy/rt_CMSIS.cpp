@@ -1,11 +1,27 @@
 #include "cmsis_os.h"
+#include "wait_api.h"
+#include <cstdlib>
+#include <cstring>
+#include <type_traits>
+
 #include <kernel.h>
 #include <t_syslog.h>
 #include <t_stdlib.h>
 
-#include <cstdlib>
-#include <cstring>
-#include <type_traits>
+#if defined(BUILD_HRP2_LIBRARY) && TKERNEL_PRVER == UINT_C(0x2021)
+
+#define C2T_TMO(ms) (((ms) == osWaitForever) ? TMO_FEVR : (ms)) // millisec -> TMO
+#define C2T_RELTIM(ms) ((RELTIM)(ms)) // millisec -> RELTIM
+
+#elif defined(BUILD_HRP3_LIBRARY) && TKERNEL_PRVER == UINT_C(0x3010)
+
+#define C2T_TMO(ms) (((ms) == osWaitForever) ? TMO_FEVR : (ms * 1000UL)) // millisec -> TMO (in us)
+#define C2T_RELTIM(ms) ((RELTIM)((ms) * 1000UL)) // millisec -> RELTIM (in us)
+// handle TMO_FEVR
+
+#else
+#error unsupported kernel version
+#endif
 
 #define DEBUG_RT_CMSIS
 
@@ -46,16 +62,6 @@ ER check_svc(const char *file, int_t line, const char *expr, ER ercd) {
 //#define C2T_PRI(pri) (TMIN_TPRI-(pri)+3) // TODO: how to decide this mapping?
 //#define C2T_PRI(pri) (TMIN_TPRI-(pri)+6) // TODO: how to decide this mapping?
 
-#if TKERNEL_PRVER == UINT_C(0x2021)
-#define C2T_TMO(ms) (((ms) == osWaitForever) ? TMO_FEVR : (ms)) // millisec -> TMO
-#define C2T_RELTIM(ms) ((RELTIM)(ms)) // millisec -> RELTIM
-#else
-#error "Only HRP2 kernel is supported."
-#define C2T_TMO(ms) (((ms) == osWaitForever) ? TMO_FEVR : (ms * 1000UL)) // millisec -> TMO (in us)
-#define C2T_RELTIM(ms) ((RELTIM)((ms) * 1000UL)) // millisec -> RELTIM (in us)
-// handle TMO_FEVR
-#endif
-
 extern "C" {
 
 // ==== Thread Management ====
@@ -66,6 +72,15 @@ osThreadId osThreadCreate (const osThreadDef_t *thread_def, void *argument) {
     assert(thread_def->tpriority >= osPriorityIdle && thread_def->tpriority <= osPriorityRealtime);
 
     T_CTSK ctsk;
+
+    // TODO: workaround to align stack
+    uint32_t stk = thread_def->stack_pointer;
+    uint32_t stksz = thread_def->stacksize ? thread_def->stacksize : DEFAULT_STACK_SIZE;
+    assert(stksz > 8);
+    uint32_t stk_aligned = (stk + 7U) & ~7U;
+    stksz -= stk_aligned - stk;
+    stksz &= ~7U;
+
     static_assert(sizeof(ctsk.exinf) == sizeof(argument), "thread argument must have same size with exinf in TSK");
     static_assert(std::is_same<decltype(thread_def->pthread(NULL)), decltype(ctsk.task(0))>::value, "thread return value must be void");
     ctsk.tskatr  = TA_ACT; 
@@ -73,8 +88,8 @@ osThreadId osThreadCreate (const osThreadDef_t *thread_def, void *argument) {
     ctsk.exinf   = (intptr_t)argument;
     ctsk.task    = (TASK)thread_def->pthread;
     ctsk.itskpri = C2T_PRI(thread_def->tpriority);
-    ctsk.stksz   = thread_def->stacksize ? thread_def->stacksize : DEFAULT_STACK_SIZE;
-    ctsk.stk     = (STK_T*)thread_def->stack_pointer;
+    ctsk.stksz   = stksz;
+    ctsk.stk     = (STK_T*)stk_aligned;
     ctsk.sstksz  = 0; // 4096/*DEFAULT_SSTKSZ*/; // FIXME: we are system tasks, we do not need sstk (hard coded, should we use DEFAULT_SSTKSZ?, or use a extern symbol to get this value
     ctsk.sstk    = NULL; // TODO: should we pass NULL to kernel?
 
@@ -204,7 +219,7 @@ osMessageQId osMessageCreate (const osMessageQDef_t *queue_def, osThreadId threa
     ER_ID ercd = acre_dtq(&cdtq);
     if (ercd <= 0) {
         syslog(LOG_ERROR, "%s() called, cnt:%d, mb:0x%p", __FUNCTION__, cdtq.dtqcnt, cdtq.dtqmb);
-        while(1)tslp_tsk(10);
+        while(1) wait_ms(10U);
         return NULL;
     }
     return (osMessageQId)ercd;

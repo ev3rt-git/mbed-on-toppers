@@ -33,6 +33,7 @@
 #define MEMP_MEM_MALLOC 1
 
 #define LWIP_HTTPD_SUPPORT_POST 1
+#define LWIP_HTTPD_STRNSTR_PRIVATE 0
 
 // TODO: this should be generated from 'mbed-lib.json'
 #define MBED_CONF_LWIP_IPV4_ENABLED 1
