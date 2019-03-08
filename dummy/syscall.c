@@ -22,3 +22,21 @@ void toppers_mbed_initialize() {
     mbed_main();
     //main();
 }
+
+/** Like strstr but does not need 'buffer' to be NULL-terminated */
+#pragma weak strnstr /* Default implementation */
+char*
+strnstr(const char* buffer, const char* token, size_t n)
+{
+  const char* p;
+  int tokenlen = (int)strlen(token);
+  if (tokenlen == 0) {
+    return (char *)(size_t)buffer;
+  }
+  for (p = buffer; *p && (p + tokenlen <= buffer + n); p++) {
+    if ((*p == *token) && (strncmp(p, token, tokenlen) == 0)) {
+      return (char *)(size_t)p;
+    }
+  }
+  return NULL;
+} 
